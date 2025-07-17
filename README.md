@@ -111,4 +111,4 @@ Feel free to fork, submit issues, or raise pull requests for improvement.
 
 ## 📬 Contact
 
-For questions, please contact [your-cloudops-team@example.com] or reach out on your Slack `#cloudops` channel.
+For questions, please contact me on [y.zafar.0504@gmail.com]
