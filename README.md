@@ -1,88 +1,114 @@
-# Azure SQL AutoScaler
+# Azure SQL Database Auto-Scaler
 
-## 🚀 Overview
-
-This repository contains PowerShell automation scripts to **dynamically scale Azure SQL Database vCores** up or down based on CPU utilization and performance thresholds. The primary objective is to **reduce Azure cloud costs** during low-usage periods and **ensure performance** during high-demand scenarios.
-
-These scripts are designed to be executed via **Azure Automation Runbooks** and integrated with **Azure Monitor Alerts**, supporting:
-
-- Automatic **scale-up** on high CPU usage.
-- Scheduled or triggered **scale-down** when demand is low.
-- **Slack notifications** for full visibility of all scaling operations.
-- Support for **primary** and **replica** databases.
-- Full **trigger context tracking** for audit purposes.
+This repository contains two PowerShell scripts designed for **automatic scaling of Azure SQL Databases** using **Azure Automation Runbooks** and **Action Groups**. The goal is to **optimize cloud cost** by automatically scaling database cores up or down based on CPU usage metrics.
 
 ---
 
-## 📂 Files Included
+## 🔍 Purpose
 
-| Script | Purpose |
-|--------|---------|
-| `scaleup.ps1` | Scales up Azure SQL database cores based on alerts and time-window restrictions. |
-| `scaledown.ps1` | Scales down Azure SQL database cores with detailed trigger tracking and context. |
+Managing performance and cost in cloud-based environments is crucial. This solution enables:
 
----
-
-## 💡 Features
-
-- 📉 **Cost Optimization**: Reduce cores during low usage windows.
-- 📈 **Performance Scaling**: Automatically increase capacity when CPU usage spikes.
-- ⏰ **Time-based Guardrails**: Restrict scale-up operations to allowed hours only.
-- 📡 **Slack Integration**: Notifications sent for start, success, failure, and warnings.
-- 🔍 **Audit Trail**: All executions are traceable with execution IDs and metadata.
-- ♻️ **Replica Awareness**: Scales replicas first, then the primary.
+- **Automatic scale-up** during peak usage hours
+- **Automatic scale-down** during off-peak hours or underutilization
+- **Cost optimization** by right-sizing compute resources
+- **Slack notifications** for visibility and auditing
+- **Enhanced traceability** when run via alerts, schedules, or manually
 
 ---
 
-## 📦 Prerequisites
+## 📁 Scripts Overview
 
-- Azure Automation Account with **System-Assigned Managed Identity**.
-- PowerShell environment with:
-  - `Az.Accounts`
-  - `Az.Sql`
-- Azure SQL Database(s) on **GP_Gen5 SKU**.
-- Slack Webhook (optional, for notifications).
+| Script Name             | Description |
+|------------------------|-------------|
+| `scaleup.ps1`          | Scales up the Azure SQL database VCore count by a specified amount, within allowed hours. Includes replica handling and Slack alerts. |
+| `scaledown.ps1`        | Scales down the VCore count with full execution traceability, enriched context about the trigger (manual, alert, webhook), and robust Slack notifications. |
 
 ---
 
-## 🛠️ Usage
+## ⚙️ Integration with Azure Automation
 
-### 1. Setup Automation
+Both scripts are designed to run as **Azure Automation Runbooks** using a system-assigned managed identity for secure, passwordless authentication.
 
-Import the scripts into **Azure Automation Runbooks**.
+### ✅ Prerequisites
 
-### 2. Parameters (Common)
+- An [Azure Automation Account](https://learn.microsoft.com/en-us/azure/automation/automation-create-standalone-account)
+- Managed Identity enabled for the Automation Account
+- Access granted to the target SQL resources
+- Slack Incoming Webhook URL (optional but recommended)
+- Alert Rules configured for CPU percentage
 
-| Parameter | Description |
-|----------|-------------|
-| `databaseName` | Name of the SQL database |
-| `databaseServer` | Azure SQL Server name |
-| `databaseResourceGroup` | Resource group of the SQL Server |
-| `subscription` | Azure subscription ID |
-| `numCores` | Number of cores to scale by |
-| `maxCores` | Maximum allowed cores |
-| `minCores` | Minimum allowed cores |
-| `replicas` | (Optional) List of replica server names |
+### 🔄 Example Use Cases
 
-### 3. Triggering
-
-You can execute the scripts via:
-- **Azure Alerts (via Webhook or Action Group)**
-- **Scheduled Jobs**
-- **Manual Runbook Execution**
+| Scenario | Setup |
+|----------|-------|
+| High CPU Usage (>90%) | Alert triggers `scaleup.ps1` via Action Group |
+| Low CPU Usage (<30%) | Alert triggers `scaledown.ps1` via Action Group |
+| Scheduled Off-Peak Hours | Time-based trigger invokes `scaledown.ps1` |
+| Manual Trigger | DevOps engineer executes Runbook with parameters |
 
 ---
 
-## 📘 Examples
+## 📝 Parameters (Common)
 
-**Scale Up by 2 vCores**
-```powershell
-.\scaleup.ps1 `
-  -databaseName "mydb" `
-  -databaseServer "sql-prod-server" `
-  -databaseResourceGroup "prod-rg" `
-  -subscription "xxxxx-xxxx-xxxx" `
-  -numCores 2 `
-  -maxCores 16 `
-  -minCores 4 `
-  -direction "up"
+| Parameter Name       | Description |
+|----------------------|-------------|
+| `databaseName`       | Name of the Azure SQL database |
+| `databaseServer`     | Name of the SQL server |
+| `databaseResourceGroup` | Resource group of the database |
+| `subscription`       | Azure subscription ID |
+| `maxCores`           | Maximum allowed vCores |
+| `minCores`           | Minimum allowed vCores |
+| `numCores`           | Number of cores to scale up/down |
+| `direction`          | `up` or `down` |
+| `replicas` (optional) | List of replica server names |
+| `slackWebhookUrl` (optional) | Slack webhook for notifications |
+| `allowedHours` (scaleup only) | Time window in hours to allow scaling |
+
+---
+
+## 📢 Slack Notification Format
+
+Slack messages sent by these scripts include:
+
+- Operation status (Started / Success / Failed / Skipped)
+- Resource name and type
+- Core counts (before/after)
+- Trigger context (who/what initiated it)
+- Error messages (if any)
+
+---
+
+## 📌 Recommendations
+
+- Set `scaleup.ps1` to only be triggerable within peak working hours.
+- Set `scaledown.ps1` to run off-hours or based on low-CPU alerts.
+- Use action groups with metric alerts on `cpu_percent` of the database.
+- Keep scaling increments (`numCores`) moderate to avoid cost spikes.
+
+---
+
+## 🔐 Security & Access
+
+These scripts are designed to use **Managed Identity** to access Azure resources. Ensure:
+
+- The Automation Account's identity has the following roles:
+  - `SQL DB Contributor` on target SQL Server
+  - `Reader` on the Subscription (optional)
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 🤝 Contributions
+
+Feel free to fork, submit issues, or raise pull requests for improvement.
+
+---
+
+## 📬 Contact
+
+For questions, please contact [your-cloudops-team@example.com] or reach out on your Slack `#cloudops` channel.
