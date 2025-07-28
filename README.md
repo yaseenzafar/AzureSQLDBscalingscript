@@ -111,4 +111,4 @@ Feel free to fork, submit issues, or raise pull requests for improvement.
 
 ## 📬 Contact
 
-For questions, please contact me on [y.zafar.0504@gmail.com]
+For questions, please contact me on [yaseenzafar@hotmail.com]
